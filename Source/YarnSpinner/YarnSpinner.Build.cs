@@ -4,10 +4,11 @@ public class YarnSpinner : ModuleRules
 {
     public YarnSpinner(ReadOnlyTargetRules Target) : base(Target)
     {
-        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-
+        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        CppStandard = CppStandardVersion.Latest;
+        
         PublicDependencyModuleNames.AddRange(
-            new string[]
+            new[]
             {
                 "Core",
                 "Projects",
@@ -18,7 +19,7 @@ public class YarnSpinner : ModuleRules
             });
 
         PrivateDependencyModuleNames.AddRange(
-            new string[]
+            new[]
             {
                 "CoreUObject",
                 "Engine",

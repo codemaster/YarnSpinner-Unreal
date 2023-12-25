@@ -1,8 +1,5 @@
-﻿
-using UnrealBuildTool;
-using System;
+﻿using UnrealBuildTool;
 using System.IO;
-
 
 public class YSProtobuf : ModuleRules
 {
@@ -29,13 +26,6 @@ public class YSProtobuf : ModuleRules
 	
 	public string ConfigPath(UnrealTargetConfiguration Config)
 	{
-		if (Config == UnrealTargetConfiguration.Debug || Config == UnrealTargetConfiguration.DebugGame)
-		{
-			return "Debug";
-		}
-		else
-		{
-			return "Release";
-		}
+		return Config is UnrealTargetConfiguration.Debug or UnrealTargetConfiguration.DebugGame ? "Debug" : "Release";
 	}
 }

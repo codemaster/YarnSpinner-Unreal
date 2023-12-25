@@ -1,13 +1,14 @@
-using UnrealBuildTool;
 using System.IO;
+using UnrealBuildTool;
 
 public class YarnSpinnerEditor : ModuleRules
 {
     public YarnSpinnerEditor(ReadOnlyTargetRules Target) : base(Target)
     {
-        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;        
+		CppStandard = CppStandardVersion.Latest;
 
-        string YscPath;
+        string yscPath;
 
         if (Target.Platform == UnrealTargetPlatform.Mac)
         {
@@ -15,29 +16,28 @@ public class YarnSpinnerEditor : ModuleRules
             // trigger -Wundef. Disable unidentified compiler directive warnings.
             bEnableUndefinedIdentifierWarnings = false;
 
-            YscPath = ToolPath(Target) + "ysc";
+            yscPath = ToolPath(Target, "ysc");
         }
         else if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            YscPath = ToolPath(Target) + "ysc.exe";
+            yscPath = ToolPath(Target, "ysc.exe");
         }
         else
         {
-            throw new System.PlatformNotSupportedException("Platform " + Target.Platform +
-                                                           " is not currently supported.");
+            throw new System.PlatformNotSupportedException($"Platform {Target.Platform} is not currently supported.");
         }
 
-        PublicDefinitions.Add("YSC_PATH=TEXT(\"" + YscPath + "\")");
+        PublicDefinitions.Add($"YSC_PATH=TEXT(\"{yscPath}\")");
 
         DynamicallyLoadedModuleNames.AddRange(
-            new string[]
+            new[]
             {
                 "AssetTools",
                 "MainFrame",
             });
 
         PrivateDependencyModuleNames.AddRange(
-            new string[]
+            new[]
             {
                 "ContentBrowser",
                 "Core",
@@ -63,8 +63,8 @@ public class YarnSpinnerEditor : ModuleRules
             });
     }
 
-    public string ToolPath(ReadOnlyTargetRules Target)
+    public string ToolPath(ReadOnlyTargetRules Target, string executable)
     {
-        return "YarnSpinner-Unreal/Tools/" + Target.Platform + "/";
+        return $"YarnSpinner-Unreal/Tools/{Target.Platform}/{executable}";
     }
 }
