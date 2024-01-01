@@ -8,6 +8,7 @@
 UReimportYarnAssetFactory::UReimportYarnAssetFactory(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
 {
+    bCreateNew = false;
 }
 
 

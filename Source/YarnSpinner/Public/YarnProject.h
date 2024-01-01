@@ -39,7 +39,7 @@ public:
 	UPROPERTY()
 	TArray<uint8> Data;
 
-	UPROPERTY(VisibleAnywhere, Category="Yarn Spinner")
+	UPROPERTY(EditAnywhere, Category="Yarn Spinner")
 	TMap<FName, FString> Lines;
 
 	// Yarn files that were imported into this project, relative to the .yarnproject file, mapped to file metadata.

@@ -3,17 +3,13 @@
 #include "YarnSpinnerEditor.h"
 
 #include "AssetToolsModule.h"
-#include "DisplayLine.h"
 #include "IAssetTools.h"
-
 #include "IYarnSpinnerModuleInterface.h"
 #include "YarnAssetActions.h"
 #include "YarnAssetFactory.h"
 #include "YarnProjectSynchronizer.h"
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
-#include "Factories/CSVImportFactory.h"
-#include "Factories/DataTableFactory.h"
 #include "Misc/YSLogging.h"
 #include "Serialization/Csv/CsvParser.h"
 
@@ -39,8 +35,8 @@ void FYarnSpinnerEditor::StartupModule()
 		EAssetTypeCategories::Type YarnSpinnerAssetCategory = AssetTools.RegisterAdvancedAssetCategory(FName(TEXT("YarnSpinner")), FText::FromString("YarnSpinner"));
 
 		// register our custom asset with example category
-		TSharedPtr<IAssetTypeActions> Action = MakeShareable(new FYarnAssetActions(YarnSpinnerAssetCategory));
-		AssetTools.RegisterAssetTypeActions(Action.ToSharedRef());
+		const TSharedRef<IAssetTypeActions> Action = MakeShared<FYarnAssetActions>(YarnSpinnerAssetCategory);
+		AssetTools.RegisterAssetTypeActions(Action);
 
 		// saved it here for unregister later
 		CreatedAssetTypeActions.Add(Action);
@@ -92,7 +88,7 @@ void FYarnSpinnerEditor::ShutdownModule()
 		IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
 		for (int32 i = 0; i < CreatedAssetTypeActions.Num(); ++i)
 		{
-			AssetTools.UnregisterAssetTypeActions(CreatedAssetTypeActions[i].ToSharedRef());
+			AssetTools.UnregisterAssetTypeActions(CreatedAssetTypeActions[i]);
 		}
 	}
 	CreatedAssetTypeActions.Empty();

@@ -1,10 +1,5 @@
 #pragma once
 
-//#include "UnrealEd.h"
-//#include "SlateBasics.h"
-//#include "SlateExtras.h"
-//#include "Editor/LevelEditor/Public/LevelEditor.h"
-//#include "Editor/PropertyEditor/Public/PropertyEditing.h"
 #include "CoreMinimal.h"
 #include "IAssetTypeActions.h"
 #include "IYarnSpinnerModuleInterface.h"
@@ -12,7 +7,7 @@
 
 YARNSPINNEREDITOR_API DECLARE_LOG_CATEGORY_EXTERN(LogYarnSpinnerEditor, Log, All);
 
-class FYarnSpinnerEditor : public IYarnSpinnerModuleInterface
+class FYarnSpinnerEditor final : public IYarnSpinnerModuleInterface
 {
 public:
     /** IModuleInterface implementation */
@@ -21,21 +16,20 @@ public:
 
     virtual void AddModuleListeners() override;
 
-    static inline FYarnSpinnerEditor& Get()
+    UE_NODISCARD FORCEINLINE static FYarnSpinnerEditor& Get()
     {
         return FModuleManager::LoadModuleChecked<FYarnSpinnerEditor>("YarnSpinnerEditor");
     }
 
-    static inline bool IsAvailable()
+    UE_NODISCARD FORCEINLINE static bool IsAvailable()
     {
         return FModuleManager::Get().IsModuleLoaded("YarnSpinnerEditor");
     }
 
-    TArray<TSharedPtr<IAssetTypeActions>> CreatedAssetTypeActions;
+    TArray<TSharedRef<IAssetTypeActions>> CreatedAssetTypeActions;
 
 	
 private:
 	class UCSVImportFactory* LocFileImporter = nullptr;
 	TUniquePtr<class FYarnProjectSynchronizer> YarnProjectSynchronizer;
-	
 };

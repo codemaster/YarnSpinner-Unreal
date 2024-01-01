@@ -2,14 +2,12 @@
 
 #pragma once
 
-#include "YarnSpinnerEditor.h"
-
 
 #include "CoreMinimal.h"
-#include "Factories/Factory.h"
-#include "YarnProject.h"
 #include "EditorReimportHandler.h"
 #include "LocalizationTargetTypes.h"
+#include "YarnProject.h"
+#include "Factories/Factory.h"
 
 THIRD_PARTY_INCLUDES_START
 #include "YarnSpinnerCore/compiler_output.pb.h"
@@ -27,6 +25,16 @@ class UYarnAssetFactory : public UFactory
 	GENERATED_UCLASS_BODY()
 
 public:
+	virtual UObject* FactoryCreateNew
+	(
+		UClass* InClass,
+		UObject* InParent,
+		FName InName,
+		EObjectFlags Flags,
+		UObject* Context,
+		FFeedbackContext* Warn
+	) override;
+	
 	virtual UObject* FactoryCreateBinary
 	(
 		UClass* InClass,
@@ -42,7 +50,7 @@ public:
 
 	virtual bool FactoryCanImport(const FString& Filename) override;
 
-	EReimportResult::Type Reimport(UYarnProject* YarnProject);
+	EReimportResult::Type Reimport(const UYarnProject* YarnProject);
 
 	static FString YscPath();
 

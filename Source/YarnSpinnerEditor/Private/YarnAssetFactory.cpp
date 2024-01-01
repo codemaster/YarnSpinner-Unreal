@@ -28,7 +28,6 @@ THIRD_PARTY_INCLUDES_START
 #include "YarnSpinnerCore/compiler_output.pb.h"
 
 #include <google/protobuf/util/json_util.h>
-#include <google/protobuf/util/type_resolver_util.h>
 THIRD_PARTY_INCLUDES_END
 
 // google::protobuf::Message &from_json(google::protobuf::Message &msg, const std::string &json);
@@ -38,10 +37,18 @@ UYarnAssetFactory::UYarnAssetFactory(const FObjectInitializer& ObjectInitializer
 {
     Formats.Add(FString(TEXT("yarnproject;")) + NSLOCTEXT("UYarnAssetFactory", "FormatTxt", "Yarn Project File").ToString());
     SupportedClass = UYarnProject::StaticClass();
-    bCreateNew = false;
+    bCreateNew = true;
     bEditorImport = true;
 }
 
+
+UObject* UYarnAssetFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags,
+    UObject* Context, FFeedbackContext* Warn)
+{
+    YS_LOG_FUNCSIG
+
+    return NewObject<UYarnProject>(InParent, InClass, InName, Flags);
+}
 
 UObject* UYarnAssetFactory::FactoryCreateBinary(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, const TCHAR* Type, const uint8*& Buffer, const uint8* BufferEnd, FFeedbackContext* Warn)
 {
@@ -78,7 +85,7 @@ UObject* UYarnAssetFactory::FactoryCreateBinary(UClass* InClass, UObject* InPare
     {
         if (Diagnostic.severity() == Yarn::Diagnostic_Severity::Diagnostic_Severity_Error)
         {
-            UE_LOG(LogYarnSpinnerEditor, Error, TEXT("Error: %s:%i %s"),
+            UE_LOG(LogYarnSpinnerEditor, Error, TEXT("Error: %hs:%i %hs"),
                    UTF8_TO_TCHAR(Diagnostic.filename().c_str()),
                    Diagnostic.range().start().line(),
                    UTF8_TO_TCHAR(Diagnostic.message().c_str()));
@@ -86,14 +93,14 @@ UObject* UYarnAssetFactory::FactoryCreateBinary(UClass* InClass, UObject* InPare
         }
         else if (Diagnostic.severity() == Yarn::Diagnostic_Severity::Diagnostic_Severity_Warning)
         {
-            UE_LOG(LogYarnSpinnerEditor, Warning, TEXT("Warning: %s:%i %s"),
+            UE_LOG(LogYarnSpinnerEditor, Warning, TEXT("Warning: %hs:%i %hs"),
                    UTF8_TO_TCHAR(Diagnostic.filename().c_str()),
                    Diagnostic.range().start().line(),
                    UTF8_TO_TCHAR(Diagnostic.message().c_str()));
         }
         else if (Diagnostic.severity() == Yarn::Diagnostic_Severity::Diagnostic_Severity_Info)
         {
-            UE_LOG(LogYarnSpinnerEditor, Log, TEXT("%s:%i %s"),
+            UE_LOG(LogYarnSpinnerEditor, Log, TEXT("%hs:%i %hs"),
                    UTF8_TO_TCHAR(Diagnostic.filename().c_str()),
                    Diagnostic.range().start().line(),
                    UTF8_TO_TCHAR(Diagnostic.message().c_str()));
@@ -154,11 +161,11 @@ bool UYarnAssetFactory::FactoryCanImport(const FString& Filename)
 }
 
 
-EReimportResult::Type UYarnAssetFactory::Reimport(UYarnProject* YarnProject)
+EReimportResult::Type UYarnAssetFactory::Reimport(const UYarnProject* YarnProject)
 {
     YS_LOG_FUNCSIG
 
-    const FString Path = YarnProject->AssetImportData->GetFirstFilename();
+    const FString Path = IsValid(YarnProject) ? YarnProject->AssetImportData->GetFirstFilename() : FString();
 
     if (Path.IsEmpty() == false)
     {
@@ -171,7 +178,7 @@ EReimportResult::Type UYarnAssetFactory::Reimport(UYarnProject* YarnProject)
             const uint8* Ptr = Data.GetData();
             CurrentFilename = FilePath; //not thread safe but seems to be how it is done..
             bool bWasCancelled = false;
-            UYarnProject* Result = Cast<UYarnProject>(FactoryCreateBinary(YarnProject->GetClass(), YarnProject->GetOuter(), YarnProject->GetFName(), YarnProject->GetFlags(), nullptr, *FPaths::GetExtension(FilePath), Ptr, Ptr + Data.Num(), GWarn));
+            const UYarnProject* Result = Cast<UYarnProject>(FactoryCreateBinary(YarnProject->GetClass(), YarnProject->GetOuter(), YarnProject->GetFName(), YarnProject->GetFlags(), nullptr, *FPaths::GetExtension(FilePath), Ptr, Ptr + Data.Num(), GWarn));
 
             // if (bWasCancelled)
             // {
