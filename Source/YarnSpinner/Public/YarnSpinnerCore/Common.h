@@ -9,17 +9,17 @@ namespace Yarn
 {
     struct Line
     {
-        FString LineID;
-        TArray<FString> Substitutions;
+        FName LineID;
+        TArray<FFormatArgumentValue> Substitutions;
 
         friend std::ostream &operator<<(std::ostream &OutputStream, const Line &AddedLine)
         {
-            OutputStream << "ID: " << TCHAR_TO_UTF8(*AddedLine.LineID);
+            OutputStream << "ID: " << TCHAR_TO_UTF8(*AddedLine.LineID.ToString());
 
             int i = 0;
-            for (const FString& Sub : AddedLine.Substitutions)
+            for (const FFormatArgumentValue& Sub : AddedLine.Substitutions)
             {
-                OutputStream << ", {" << i << "} :" << TCHAR_TO_UTF8(*Sub);
+                OutputStream << ", {" << i << "} :" << TCHAR_TO_UTF8(*Sub.GetTextValue().ToString());
                 i++;
             }
             return OutputStream;

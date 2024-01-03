@@ -188,13 +188,12 @@ namespace Yarn
 
                     // And get that many expressions off the stack and build the
                     // collection of substitutions (in reverse order)
-                    TArray<FString> substitutions;
+                    TArray<FFormatArgumentValue> substitutions;
 
                     for (int expressionIndex = expressionCount - 1; expressionIndex >= 0; expressionIndex--)
                     {
-                        auto top = state.PopValue();
-                        FString topAsString = top.ConvertToString();
-                        substitutions.Add(topAsString);
+                        const FValue top = state.PopValue();
+                        substitutions.Add(FText::FromString(*top.ConvertToString()));
                     }
 
                     Algo::Reverse(substitutions);
@@ -319,13 +318,12 @@ namespace Yarn
 
                     // Get that many expressions off the stack and build the collection
                     // of substitutions (in reverse order)
-                    TArray<FString> substitutions;
+                    TArray<FFormatArgumentValue> substitutions;
 
                     for (int expressionIndex = expressionCount - 1; expressionIndex >= 0; expressionIndex--)
                     {
-                        auto top = state.PopValue();
-                        FString topAsString = top.ConvertToString();
-                        substitutions.Add(topAsString);
+                        const FValue top = state.PopValue();
+                        substitutions.Add(FText::FromString(top.ConvertToString()));
                     }
 
                     Algo::Reverse(substitutions);

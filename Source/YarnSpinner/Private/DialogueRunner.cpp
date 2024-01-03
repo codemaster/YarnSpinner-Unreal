@@ -47,11 +47,11 @@ void ADialogueRunner::BeginPlay()
 
     VirtualMachine->OnLine.AddLambda([this](const Yarn::Line& Line)
     {
-        YS_LOG("Received line %s", *Line.LineID);
+        YS_LOG("Received line %s", *Line.LineID.ToString());
 
         // Get the Yarn line struct, and make a ULine out of it to use
         ULine* LineObject = NewObject<ULine>(this);
-        LineObject->LineID = FName(*Line.LineID);
+        LineObject->LineID = Line.LineID;
 
         UpdateDisplayTextForLine(LineObject, Line);
 
@@ -70,13 +70,13 @@ void ADialogueRunner::BeginPlay()
 
         for (const Yarn::Option& Option : OptionSet.Options)
         {
-            YS_LOG("- %i: %s", Option.ID, *Option.Line.LineID);
+            YS_LOG("- %i: %s", Option.ID, *Option.Line.LineID.ToString());
 
             UOption* Opt = NewObject<UOption>(this);
             Opt->OptionID = Option.ID;
 
             Opt->Line = NewObject<ULine>(Opt);
-            Opt->Line->LineID = FName(*Option.Line.LineID);
+            Opt->Line->LineID = Option.Line.LineID;
 
             UpdateDisplayTextForLine(Opt->Line, Option.Line);
 
@@ -327,7 +327,7 @@ UYarnSubsystem* ADialogueRunner::YarnSubsystem() const
 
 void ADialogueRunner::UpdateDisplayTextForLine(ULine* const Line, const Yarn::Line& YarnLine) const
 {
-    const FName LineID = FName(*YarnLine.LineID);
+    const FName LineID = YarnLine.LineID;
 
     // This assumes that we only ever care about lines that actually exist in .yarn files (rather than allowing extra lines in .csv files)
     if (!IsValid(YarnProject) || !YarnProject->HasLine(LineID))
@@ -347,14 +347,8 @@ void ADialogueRunner::UpdateDisplayTextForLine(ULine* const Line, const Yarn::Li
         YS_LOG("Using non-localized version of line with ID '%s' because a localized version was not found.", *LineID.ToString());
     }
 
-    // Convert & Apply Substitutions
-    FFormatOrderedArguments FormatArgs;
-    Algo::Transform(YarnLine.Substitutions, FormatArgs, [](const FString& Substitution)
-    {
-        return FText::FromString(Substitution);
-    });
-
-    const FText TextWithSubstitutions = FText::Format(FormatText, FormatArgs);
+    // Apply Substitutions
+    const FText TextWithSubstitutions = FText::Format(FormatText, YarnLine.Substitutions);
 
     // TODO: add support for markup & context (speaker, target)
 
