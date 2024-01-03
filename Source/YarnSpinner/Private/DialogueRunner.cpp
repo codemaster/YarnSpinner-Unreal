@@ -11,35 +11,27 @@
 THIRD_PARTY_INCLUDES_START
 #include "YarnSpinnerCore/VirtualMachine.h"
 THIRD_PARTY_INCLUDES_END
-//#include "StaticParty.h"
 
 
 // Sets default values
 ADialogueRunner::ADialogueRunner()
 {
     // Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-    PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bCanEverTick = false;
 }
 
-
-// Called when the game starts or when spawned
-void ADialogueRunner::PreInitializeComponents()
+void ADialogueRunner::BeginPlay()
 {
-    Super::PreInitializeComponents();
+    Super::BeginPlay();
 
     if (!YarnProject)
     {
         UE_LOG(LogYarnSpinner, Error, TEXT("DialogueRunner can't initialize, because it doesn't have a Yarn Asset."));
         return;
     }
-
-    YarnProject->Init();
-
-    Yarn::Program Program{};
-
-    bool bParseSuccess = Program.ParsePartialFromArray(YarnProject->Data.GetData(), YarnProject->Data.Num());
-
-    if (!bParseSuccess)
+    
+    const TSharedPtr<Yarn::Program> Program = YarnProject->GetProgram();
+    if (!Program.IsValid())
     {
         UE_LOG(LogYarnSpinner, Error, TEXT("DialogueRunner can't initialize, because its Yarn Asset failed to load."));
         return;
@@ -51,7 +43,7 @@ void ADialogueRunner::PreInitializeComponents()
     // Create the VirtualMachine, supplying it with the loaded Program and
     // configuring it to use our library, plus use this ADialogueRunner as the
     // logger and the variable storage
-    VirtualMachine = MakeUnique<Yarn::VirtualMachine>(Program, *(Library), *this);
+    VirtualMachine = MakeUnique<Yarn::VirtualMachine>(Program.ToSharedRef(), *Library, *this);
 
     VirtualMachine->OnLine.AddLambda([this](const Yarn::Line& Line)
     {
@@ -61,7 +53,7 @@ void ADialogueRunner::PreInitializeComponents()
         ULine* LineObject = NewObject<ULine>(this);
         LineObject->LineID = FName(*Line.LineID);
 
-        GetDisplayTextForLine(LineObject, Line);
+        UpdateDisplayTextForLine(LineObject, Line);
 
         const TArray<TSoftObjectPtr<UObject>> LineAssets = YarnProject->GetLineAssets(LineObject->LineID);
         YS_LOG_FUNC("Got %d line assets for line '%s'", LineAssets.Num(), *LineObject->LineID.ToString())
@@ -86,7 +78,7 @@ void ADialogueRunner::PreInitializeComponents()
             Opt->Line = NewObject<ULine>(Opt);
             Opt->Line->LineID = FName(*Option.Line.LineID);
 
-            GetDisplayTextForLine(Opt->Line, Option.Line);
+            UpdateDisplayTextForLine(Opt->Line, Option.Line);
 
             Opt->bIsAvailable = Option.IsAvailable;
 
@@ -165,13 +157,6 @@ void ADialogueRunner::PreInitializeComponents()
         UE_LOG(LogYarnSpinner, Log, TEXT("Received dialogue complete"));
         OnDialogueEnded();
     });
-}
-
-
-// Called every frame
-void ADialogueRunner::Tick(float DeltaTime)
-{
-    Super::Tick(DeltaTime);
 }
 
 
@@ -340,29 +325,36 @@ UYarnSubsystem* ADialogueRunner::YarnSubsystem() const
 }
 
 
-void ADialogueRunner::GetDisplayTextForLine(ULine* Line, const Yarn::Line& YarnLine)
+void ADialogueRunner::UpdateDisplayTextForLine(ULine* const Line, const Yarn::Line& YarnLine) const
 {
     const FName LineID = FName(*YarnLine.LineID);
 
     // This assumes that we only ever care about lines that actually exist in .yarn files (rather than allowing extra lines in .csv files)
-    if (!YarnProject || !YarnProject->Lines.Contains(LineID))
+    if (!IsValid(YarnProject) || !YarnProject->HasLine(LineID))
     {
         Line->DisplayText = FText::FromString(TEXT("(missing line!)"));
         return;
     }
 
-    const FText LocalisedDisplayText = FText::FromString(FTextLocalizationManager::Get().GetDisplayString({YarnProject->GetName()}, {LineID.ToString()}, nullptr).Get());
+    // Try to find the localized string. If not, use the non-localized one from the project itself.
+    const FTextConstDisplayStringPtr FindDisplayStr = FTextLocalizationManager::Get()
+        .FindDisplayString(YarnProject->GetName(), LineID.ToString());
+    const FTextFormat FormatText = FText::FromString(FindDisplayStr.IsValid() ? *FindDisplayStr : YarnProject->GetLine(LineID));
 
-    const FText NonLocalisedDisplayText = FText::FromString(YarnProject->Lines[LineID]);
-
-    // Apply substitutions
-    FFormatOrderedArguments FormatArgs;
-    for (const FString& Substitution : YarnLine.Substitutions)
+    // Log if we weren't able to find a localized version
+    if (!FindDisplayStr.IsValid())
     {
-        FormatArgs.Emplace(FText::FromString(Substitution));
+        YS_LOG("Using non-localized version of line with ID '%s' because a localized version was not found.", *LineID.ToString());
     }
 
-    const FText TextWithSubstitutions = (LocalisedDisplayText.IsEmptyOrWhitespace()) ? FText::Format(NonLocalisedDisplayText, FormatArgs) : FText::Format(LocalisedDisplayText, FormatArgs);
+    // Convert & Apply Substitutions
+    FFormatOrderedArguments FormatArgs;
+    Algo::Transform(YarnLine.Substitutions, FormatArgs, [](const FString& Substitution)
+    {
+        return FText::FromString(Substitution);
+    });
+
+    const FText TextWithSubstitutions = FText::Format(FormatText, FormatArgs);
 
     // TODO: add support for markup & context (speaker, target)
 

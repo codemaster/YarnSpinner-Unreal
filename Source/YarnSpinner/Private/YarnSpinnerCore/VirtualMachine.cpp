@@ -10,65 +10,45 @@
 
 namespace Yarn
 {
-    VirtualMachine::VirtualMachine(Yarn::Program program, Library& library, IVariableStorage& variableStorage)
-        : program(program),
+    VirtualMachine::VirtualMachine(const TSharedRef<Yarn::Program>& Program, Library& Library, IVariableStorage& VariableStorage)
+        : Program(Program),
           state(State()),
           executionState(STOPPED),
-          library(library),
-          variableStorage(variableStorage)
+          library(Library),
+          variableStorage(VariableStorage)
     {
         // Add the 'visited' and 'visited_count' functions, which query the variable
         // storage for information about how many times a node has been visited.
-        library.AddFunction(
+        Library.AddFunction(
             "visited",
             TYarnFunction<bool>::CreateLambda(
-            [&variableStorage](const TArray<FValue>& Values)
+            [&VariableStorage](const TArray<FValue>& Values)
             {
                 const FString NodeName = Values[0].GetValue<FString>();
                 const FString VisitTrackingVariable = Library::GenerateUniqueVisitedVariableForNode(NodeName);
-                return variableStorage.HasValue(VisitTrackingVariable) ?
-                    variableStorage.GetValue(VisitTrackingVariable).GetValue<double>() > 0 :
+                return VariableStorage.HasValue(VisitTrackingVariable) ?
+                    VariableStorage.GetValue(VisitTrackingVariable).GetValue<double>() > 0 :
                     false;
             }),
             1);
 
-        library.AddFunction(
+        Library.AddFunction(
             "visited_count",
             TYarnFunction<float>::CreateLambda(
-            [&variableStorage](const TArray<FValue>& Values)
+            [&VariableStorage](const TArray<FValue>& Values)
             {
                 const FString NodeName = Values[0].GetValue<FString>();
                 const FString VisitTrackingVariable = Library::GenerateUniqueVisitedVariableForNode(NodeName);
-                return variableStorage.HasValue(VisitTrackingVariable) ?
-                    static_cast<int>(variableStorage.GetValue(VisitTrackingVariable).GetValue<double>()) :
+                return VariableStorage.HasValue(VisitTrackingVariable) ?
+                    static_cast<int>(VariableStorage.GetValue(VisitTrackingVariable).GetValue<double>()) :
                     0;
             }),
             1);
     }
-
-
-    VirtualMachine::~VirtualMachine()
-    {
-    }
-
-
-    void VirtualMachine::SetProgram(Yarn::Program newProgram)
-    {
-        this->program = newProgram;
-        SetCurrentExecutionState(STOPPED);
-        state.programCounter = 0;
-    }
-
-
-    const Yarn::Program& VirtualMachine::GetProgram()
-    {
-        return this->program;
-    }
-
-
+    
     bool VirtualMachine::SetNode(const FString& NodeName)
     {
-        if (program.nodes().contains(TCHAR_TO_UTF8(*NodeName)) == false)
+        if (Program->nodes().contains(TCHAR_TO_UTF8(*NodeName)) == false)
         {
             YS_ERR("No node named %s has been loaded.", *NodeName);
             return false;
@@ -76,7 +56,7 @@ namespace Yarn
 
         YS_LOG("Running node %s", *NodeName);
 
-        currentNode = program.nodes().at(TCHAR_TO_UTF8(*NodeName));
+        currentNode = Program->nodes().at(TCHAR_TO_UTF8(*NodeName));
 
         // Clear our State and return to the Stopped execution state
         state = State();
@@ -434,7 +414,7 @@ namespace Yarn
                 // the resulting value onto the stack.
                 const FString functionName = instruction.operands(0).string_value().c_str();
 
-                auto actualParamCount = (int)state.PopValue().GetValue<double>();
+                const int actualParamCount = static_cast<int>(state.PopValue().GetValue<double>());
                 if (!OnCheckFunctionExist.Execute(functionName))
                 {
                     YS_ERR("Unknown function '%s'", *functionName);
@@ -501,12 +481,12 @@ namespace Yarn
                     FValue v = variableStorage.GetValue(variableName);
                     state.PushValue(v);
                 }
-                else if (program.initial_values().count(TCHAR_TO_UTF8(*variableName)) > 0)
+                else if (Program->initial_values().count(TCHAR_TO_UTF8(*variableName)) > 0)
                 {
                     // We don't have a value for this. The initial value may be found in
                     // the program. (If it's not, then the variable's value is
                     // undefined, which isn't allowed.)
-                    auto operand = program.initial_values().at(TCHAR_TO_UTF8(*variableName));
+                    auto operand = Program->initial_values().at(TCHAR_TO_UTF8(*variableName));
                     switch (operand.value_case())
                     {
                     case Yarn::Operand::ValueCase::kBoolValue:
@@ -602,7 +582,7 @@ namespace Yarn
     }
 
 
-    bool VirtualMachine::CheckCanContinue()
+    bool VirtualMachine::CheckCanContinue() const
     {
         if (executionState == WAITING_ON_OPTION_SELECTION)
         {

@@ -112,22 +112,22 @@ UObject* UYarnAssetFactory::FactoryCreateBinary(UClass* InClass, UObject* InPare
         UE_LOG(LogYarnSpinnerEditor, Error, TEXT("File contains errors; stopping import."));
         return nullptr;
     }
+    
+    YarnProject->SetProgram(CompilerOutput.program());
 
-    // Now convert the Program into binary wire format for saving
-    const std::string Data = CompilerOutput.program().SerializeAsString();
-
-    // And convert THAT into a TArray of bytes for storage
-    const TArray<uint8> Output = TArray(reinterpret_cast<const uint8*>(Data.c_str()), Data.size());
-
-    YarnProject->Data = Output;
-
-    // For each line we've received, store it in the Yarn asset
-    for (auto Pair : CompilerOutput.strings())
+    // Convert the protocol buffer lines to Unreal formats
+    TMap<FName, FString> LinesMap;
+    Algo::Transform(CompilerOutput.strings(), LinesMap,
+        [](const google::protobuf::MapPair<std::string, Yarn::StringInfo>& Pair) -> TPair<FName, FString>
     {
-        FName LineID = FName(Pair.first.c_str());
-        FString LineText = FString(Pair.second.text().c_str());
-        YarnProject->Lines.Add(LineID, LineText);
-    }
+        return TPair<FName, FString>(
+            FName(Pair.first.c_str()),
+            FString(Pair.second.text().c_str())
+        );
+    });
+    
+    // And then we move the transformed values into the project
+    YarnProject->SetLines(MoveTemp(LinesMap));
 
     // Record where this asset came from so we know how to update it
     if (!CurrentFilename.IsEmpty())
@@ -372,7 +372,7 @@ void UYarnAssetFactory::BuildLocalizationTarget(const UYarnProject* YarnProject,
     {
         FString Culture = Loc.Key;
         FYarnProjectLocalizationData LocData = Loc.Value;
-        FString LocFile = FPaths::Combine(YarnProject->YarnProjectPath(), LocData.strings);
+        FString LocFile = FPaths::Combine(YarnProject->GetPath(), LocData.strings);
         FPaths::NormalizeFilename(LocFile);
         FPaths::CollapseRelativeDirectories(LocFile);
         FPaths::RemoveDuplicateSlashes(LocFile);

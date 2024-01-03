@@ -9,8 +9,6 @@
 #include "YarnSpinnerCore/State.h"
 #include "Value.h"
 
-#include <functional>
-
 namespace Yarn
 {
 
@@ -68,9 +66,9 @@ namespace Yarn
         };
 
     private:
-        Yarn::Program program;
+        TSharedRef<Program> Program;
 
-        Yarn::Node currentNode;
+        Node currentNode;
 
         FString currentNodeName;
 
@@ -82,11 +80,7 @@ namespace Yarn
         IVariableStorage &variableStorage;
 
     public:
-        VirtualMachine(Yarn::Program program, Library &library, IVariableStorage &variableStorage);
-        ~VirtualMachine();
-
-        void SetProgram(Yarn::Program program);
-        const Yarn::Program &GetProgram();
+        VirtualMachine(const TSharedRef<Yarn::Program>& Program, Library &Library, IVariableStorage &VariableStorage);
 
         bool SetNode(const FString& NodeName);
         const char *GetCurrentNodeName();
@@ -113,8 +107,8 @@ namespace Yarn
 
     private:
         void SetCurrentExecutionState(ExecutionState state);
-        bool CheckCanContinue();
-        bool RunInstruction(Yarn::Instruction &instruction);
+        bool CheckCanContinue() const;
+        bool RunInstruction(Instruction&instruction);
         int FindInstructionPointForLabel(const FString& Label);
     };
 }

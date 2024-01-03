@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
+#include "YarnSpinnerCore/yarn_spinner.pb.h"
 #include "YarnProject.generated.h"
 
 
@@ -12,23 +12,22 @@ struct FYarnSourceMeta
 {
 	GENERATED_BODY()
 
+	// Filename of the source file
+	UPROPERTY(VisibleDefaultsOnly)
+	FString Filename;
+
 	// Timestamp of the file when it was imported.
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY()
 	FDateTime Timestamp;
 
 	// MD5 hash of the file when it was imported.
 	UPROPERTY()
 	FString FileHash;
-
-	FString ToString() const
-	{
-		return FString::Printf(TEXT("%s -- %s"), *Timestamp.ToString(), *FileHash);
-	}
 };
 
 
 /**
- * 
+ * Data representing a Yarn Project (.yarnproject file)
  */
 UCLASS(AutoExpandCategories = "ImportOptions")
 class YARNSPINNER_API UYarnProject : public UObject
@@ -36,38 +35,68 @@ class YARNSPINNER_API UYarnProject : public UObject
 	GENERATED_BODY()
 
 public:
-	UPROPERTY()
-	TArray<uint8> Data;
+	UFUNCTION(BlueprintPure, Category="Yarn Spinner")
+	FORCEINLINE bool HasLine(const FName& LineId) const { return Lines.Contains(LineId); }
 
-	UPROPERTY(EditAnywhere, Category="Yarn Spinner")
-	TMap<FName, FString> Lines;
+	UFUNCTION(BlueprintCallable, Category="Yarn Spinner")
+	bool FindLine(const FName& LineId, FString& Line) const;
 
-	// Yarn files that were imported into this project, relative to the .yarnproject file, mapped to file metadata.
-	UPROPERTY(VisibleAnywhere, Category="File Path")
-	TMap<FString, FYarnSourceMeta> YarnFiles;
+	UFUNCTION(BlueprintPure, Category="Yarn Spinner")
+	FORCEINLINE FString& GetLine(const FName& LineId) { return Lines[LineId]; }
 
-    // UPROPERTY(EditDefaultsOnly, Category = "Yarn Spinner")
-    // TArray<TSubclassOf<class AYarnFunctionLibrary>> FunctionLibraries;
+	UFUNCTION(BlueprintCallable, Category="Yarn Spinner")
+	void SetLines(const TMap<FName, FString>& NewLines);
+	void SetLines(TMap<FName, FString>&& NewLines);
 
-    void Init();
+	UFUNCTION(BlueprintCallable, Category="Yarn Spinner")
+    FString GetLocAssetPackage(const FString& Language) const;
 
-    FString GetLocAssetPackage() const;
-    FString GetLocAssetPackage(FName Language) const;
-    class UDataTable* GetLocTextDataTable(FName Language) const;
+	UFUNCTION(BlueprintCallable, Category="Yarn Spinner")
+	UDataTable* GetLocTextDataTable(const FString& Language) const;
 
-    TArray<TSoftObjectPtr<UObject>> GetLineAssets(FName Name);
+	UFUNCTION(BlueprintCallable, Category="Yarn Spinner")
+    TArray<TSoftObjectPtr<UObject>> GetLineAssets(const FName& Name) const;
+
+	virtual void PostInitProperties() override;
 
 #if WITH_EDITORONLY_DATA
-	virtual void PostInitProperties() override;
 	void SetYarnSources(const TArray<FString>& NewYarnSources);
 	bool ShouldRecompile(const TArray<FString>& LatestYarnSources) const;
-	FString YarnProjectPath() const;
+	void SetProgram(const Yarn::Program& NewProgram);
+
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE FString GetPath() const;
 
     /** The file this data table was imported from, may be empty */
 	UPROPERTY(VisibleAnywhere, Instanced, Category=ImportSource)
-	class UAssetImportData* AssetImportData;
+	UAssetImportData* AssetImportData;
 #endif
+	
+	UE_NODISCARD TSharedPtr<Yarn::Program> GetProgram();
 
-private:
-    TMap<FName, TArray<TSoftObjectPtr<UObject>>> LineAssets;
+protected:
+	UPROPERTY()
+	TArray<uint8> ProgramData;
+
+	// UPROPERTY(EditDefaultsOnly, Category = "Yarn Spinner")
+	// TArray<TSubclassOf<class AYarnFunctionLibrary>> FunctionLibraries;
+	
+	UFUNCTION(BlueprintPure, Category="Yarn Spinner")
+	FString GetBaseLocAssetPackage() const;
+	
+	// All of the lines throughout the yarn project
+	UPROPERTY(VisibleAnywhere, Category="Yarn Spinner")
+	TMap<FName, FString> Lines;
+	
+	// Source yarn files that were added tot he project
+	// Relative to the .yarnproject file, if imported
+	UPROPERTY(EditDefaultsOnly, Category="Yarn Spinner|Files")
+	TArray<FYarnSourceMeta> SourceFiles;
+
+	// Re-hydrated project instance
+	TSharedPtr<Yarn::Program> Program = nullptr;
+
+	// Assets that are utilized in lines
+	// Map is from Line Id -> Soft Object Ptr
+    TMap<FName, TArray<TSoftObjectPtr<>>> LineAssets;
 };

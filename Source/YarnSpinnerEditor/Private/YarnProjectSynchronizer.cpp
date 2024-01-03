@@ -182,7 +182,7 @@ void FYarnProjectSynchronizer::UpdateYarnProjectAsset(UYarnProject* YarnProjectA
 
 FString FYarnProjectSynchronizer::AbsoluteSourcePath(const UYarnProject* YarnProjectAsset, const FString& SourcePath)
 {
-    FString S = FPaths::IsRelative(SourcePath) ? FPaths::Combine(YarnProjectAsset->YarnProjectPath(), SourcePath) : SourcePath;
+    FString S = FPaths::IsRelative(SourcePath) ? FPaths::Combine(YarnProjectAsset->GetPath(), SourcePath) : SourcePath;
     FPaths::NormalizeDirectoryName(S);
     FPaths::CollapseRelativeDirectories(S);
     FPaths::RemoveDuplicateSlashes(S);
@@ -357,7 +357,7 @@ void FYarnProjectSynchronizer::UpdateYarnProjectAssets(const UYarnProject* YarnP
     // Check for existing localised asset files
     YS_LOG("Localised files found for language '%s'.  Looking for changes...", *Loc)
 
-    const FString LocalisedAssetPackage = YarnProjectAsset->GetLocAssetPackage(FName(Loc));
+    const FString LocalisedAssetPackage = YarnProjectAsset->GetLocAssetPackage(Loc);
 
     const FString LocalisedAssetPath = FPackageName::LongPackageNameToFilename(LocalisedAssetPackage);
     if (!FPaths::DirectoryExists(LocalisedAssetPath))

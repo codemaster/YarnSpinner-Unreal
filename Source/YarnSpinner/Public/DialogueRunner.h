@@ -16,7 +16,7 @@ THIRD_PARTY_INCLUDES_END
 
 DECLARE_DELEGATE(FYarnDialogueRunnerContinueDelegate);
 
-UCLASS()
+UCLASS(BlueprintType)
 class YARNSPINNER_API ADialogueRunner : public AActor, public Yarn::IVariableStorage
 {
     GENERATED_BODY()
@@ -26,12 +26,9 @@ public:
     ADialogueRunner();
 
 protected:
-    virtual void PreInitializeComponents() override;
+    virtual void BeginPlay() override;
     
 public:
-    // Called every frame
-    virtual void Tick(float DeltaTime) override;
-
     UFUNCTION(BlueprintNativeEvent, Category="Dialogue Runner")
     void OnDialogueStarted();
     
@@ -59,7 +56,7 @@ public:
     void SelectOption(UOption* Option);
     
     UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category="Dialogue Runner")
-    UYarnProject* YarnProject;
+    TObjectPtr<UYarnProject> YarnProject = nullptr;
 
     UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category="Dialogue Runner")
     bool bRunLinesForSelectedOptions = true;
@@ -81,12 +78,10 @@ private:
 
     virtual void ClearValue(const FString& Name) override;
 
-    FString GetLine(FName LineID, FName Language);
-
     UPROPERTY()
     FString Blah;
 
     class UYarnSubsystem* YarnSubsystem() const;
     
-    void GetDisplayTextForLine(class ULine* Line, const Yarn::Line& YarnLine);
+    void UpdateDisplayTextForLine(ULine* const Line, const Yarn::Line& YarnLine) const;
 };
