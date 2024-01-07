@@ -4,10 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Library/YarnLibraryRegistry.h"
-#include "AssetRegistry/ARFilter.h"
-#include "AssetRegistry/AssetRegistryModule.h"
 
-#include "YarnProject.h"
 #include "Engine/DataTable.h"
 #include "Engine/ObjectLibrary.h"
 #include "YarnSpinnerCore/VirtualMachine.h"
@@ -23,20 +20,17 @@ class YARNSPINNER_API UYarnSubsystem : public UGameInstanceSubsystem, public Yar
     GENERATED_BODY()
 public:
     UYarnSubsystem();
-    
-    virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-    virtual void Deinitialize() override;
 
-    virtual void SetValue(const FString& name, bool value);
-    virtual void SetValue(const FString& name, float value);
-    virtual void SetValue(const FString& name, const FString& value);
+    virtual void SetValue(const FString& name, bool value) override;
+    virtual void SetValue(const FString& name, float value) override;
+    virtual void SetValue(const FString& name, const FString& value) override;
 
-    virtual bool HasValue(const FString& name);
-    virtual Yarn::FValue GetValue(const FString& name);
+    virtual bool HasValue(const FString& name) override;
+    virtual Yarn::FValue GetValue(const FString& name) override;
 
-    virtual void ClearValue(const FString& name);
+    virtual void ClearValue(const FString& name) override;
 
-    const UYarnLibraryRegistry* GetYarnLibraryRegistry() const { return YarnFunctionRegistry; }
+    UE_NODISCARD FORCEINLINE const UYarnLibraryRegistry* GetYarnLibraryRegistry() const { return YarnFunctionRegistry; }
 
 private:
     // UPROPERTY()

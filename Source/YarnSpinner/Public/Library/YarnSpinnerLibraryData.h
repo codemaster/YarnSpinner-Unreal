@@ -80,6 +80,7 @@ struct YARNSPINNER_API FYarnSpinnerLibraryData
 {
     static TOptional<FYarnSpinnerLibraryData> FromJsonString(const FString& JsonString);
     FString ToJsonString();
+    void Save();
 
     GENERATED_BODY()
     // List of commands to make available in Yarn scripts

@@ -15,16 +15,29 @@ public:
     
     template <class AssetClass>
     static TArray<FAssetData> FindAssetsInRegistry(const TSubclassOf<UObject> BaseClass = AssetClass::StaticClass());
+    
     template <class AssetClass>
     static TArray<FAssetData> FindAssetsInRegistryByPackageName(const FName SearchPackage, const TSubclassOf<UObject> BaseClass = AssetClass::StaticClass());
+
     template <class AssetClass>
     static TArray<FAssetData> FindAssetsInRegistryByPackagePath(const FName SearchPackage, const TSubclassOf<UObject> BaseClass = AssetClass::StaticClass());
+
     template <class AssetClass>
     static TArray<FAssetData> FindAssetsInRegistryByPackagePath(const FString SearchPackage, const TSubclassOf<UObject> BaseClass = AssetClass::StaticClass());
 
-private:
     template <class AssetClass>
-    static FARFilter GetClassPathFilter(const TSubclassOf<UObject> BaseClass = AssetClass::StaticClass());
+    static FARFilter GetClassPathFilter(const UClass* const Class = AssetClass::StaticClass());
+
+    template <class AssetClass>
+    static TArray<AssetClass*> FindBlueprintsOfClass(const UClass* const Class = AssetClass::StaticClass());
+
+    template <class AssetClass>
+    static TArray<UBlueprint*> FindBlueprintAssetsOfClass(const UClass* const Class = AssetClass::StaticClass());
+
+    template <class AssetClass>
+    static bool IsBlueprintAssetOfClass(const UBlueprint* const Blueprint, const UClass* const Class = AssetClass::StaticClass());
+
+private:
     static TArray<FAssetData> FindAssets(const FARFilter& AssetFilter);
 };
 
@@ -60,17 +73,75 @@ TArray<FAssetData> FYarnAssetHelpers::FindAssetsInRegistryByPackagePath(const FS
     return FindAssetsInRegistryByPackagePath<AssetClass>(FName(SearchPackage), BaseClass);
 }
 
-
 template <class AssetClass>
-FARFilter FYarnAssetHelpers::GetClassPathFilter(const TSubclassOf<UObject> BaseClass)
+FARFilter FYarnAssetHelpers::GetClassPathFilter(const UClass* const Class)
 {
     FARFilter AssetFilter; 
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1
-    AssetFilter.ClassPaths.Add(BaseClass->GetClassPathName());
+    AssetFilter.ClassPaths.Add(Class->GetClassPathName());
 #else
-    AssetFilter.ClassNames.Add(BaseClass->GetFName());
+    Filter.ClassNames.Add(Class->GetFName());
 #endif
     return AssetFilter;
+}
+
+template <class AssetClass>
+TArray<AssetClass*> FYarnAssetHelpers::FindBlueprintsOfClass(const UClass* const Class)
+{
+    TArray<AssetClass*> Blueprints;
+    FAssetRegistryModule::GetRegistry().EnumerateAssets(GetClassPathFilter<UBlueprint>(),
+[&Blueprints](const FAssetData& AssetData) -> bool
+    {
+        if (const UBlueprint* const BlueprintObj = Cast<UBlueprint>(AssetData.GetAsset()))
+        {
+            if (IsBlueprintAssetOfClass<AssetClass>(BlueprintObj))
+            {
+                if (AssetClass* const BlueprintDefObj = BlueprintObj->GeneratedClass->GetDefaultObject<AssetClass>(); IsValid(BlueprintDefObj))
+                {
+                    Blueprints.Add(BlueprintDefObj);
+                }
+            }
+        }
+    
+        return true;
+    });
+    return Blueprints;
+}
+
+template <class AssetClass>
+TArray<UBlueprint*> FYarnAssetHelpers::FindBlueprintAssetsOfClass(const UClass* const Class)
+{
+    TArray<UBlueprint*> Blueprints;
+    FAssetRegistryModule::GetRegistry().EnumerateAssets(GetClassPathFilter<UBlueprint>(),
+[&Blueprints](const FAssetData& AssetData) -> bool
+    {
+        if (UBlueprint* const BlueprintObj = Cast<UBlueprint>(AssetData.GetAsset()))
+        {
+            if (IsBlueprintAssetOfClass<AssetClass>(BlueprintObj))
+            {
+                Blueprints.Add(BlueprintObj);
+            }
+        }
+    
+        return true;
+    });
+    return Blueprints;
+}
+
+template <class AssetClass>
+bool FYarnAssetHelpers::IsBlueprintAssetOfClass(const UBlueprint* const Blueprint, const UClass* const Class)
+{
+    if (!IsValid(Blueprint) || !Blueprint->GeneratedClass || !Blueprint->ParentClass)
+    {
+        return false;
+    }
+            
+    if (const UClass* const BlueprintParentClass = Blueprint->ParentClass; BlueprintParentClass->IsChildOf(Class))
+    {
+        return true;
+    }
+
+    return false;
 }
 
 

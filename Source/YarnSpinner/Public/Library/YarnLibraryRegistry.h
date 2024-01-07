@@ -28,7 +28,9 @@ struct YARNSPINNER_API FYarnBlueprintLibFunction
 {
     GENERATED_BODY()
 
+    UPROPERTY(Transient)
     UBlueprint* Library;
+    
     FName Name;
 
     TArray<FYarnBlueprintParam> InParams;

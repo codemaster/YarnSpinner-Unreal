@@ -3,6 +3,7 @@
 
 #include "Library/YarnSpinnerLibraryData.h"
 #include "JsonObjectConverter.h"
+#include "Misc/YarnAssetHelpers.h"
 #include "Misc/YSLogging.h"
 
 
@@ -27,4 +28,11 @@ FString FYarnSpinnerLibraryData::ToJsonString()
     FString JsonString;
     FJsonObjectConverter::UStructToJsonObjectString<FYarnSpinnerLibraryData>(*this, JsonString, 0, 0);
     return JsonString;
+}
+
+void FYarnSpinnerLibraryData::Save()
+{
+    // Write the .ysls file
+    const FString FileContents = ToJsonString();
+    FFileHelper::SaveStringToFile(FileContents, *FYarnAssetHelpers::YSLSFilePath());
 }
