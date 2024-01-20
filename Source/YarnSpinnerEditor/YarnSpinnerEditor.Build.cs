@@ -15,11 +15,11 @@ public class YarnSpinnerEditor : ModuleRules
             // trigger -Wundef. Disable unidentified compiler directive warnings.
             bEnableUndefinedIdentifierWarnings = false;
 
-            YscPath = ToolPath(Target) + "ysc";
+            YscPath = ToolPath(Target, "ysc");
         }
         else if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            YscPath = ToolPath(Target) + "ysc.exe";
+            YscPath = ToolPath(Target, "ysc.exe");
         }
         else
         {
@@ -63,8 +63,9 @@ public class YarnSpinnerEditor : ModuleRules
             });
     }
 
-    public string ToolPath(ReadOnlyTargetRules Target)
+    public string ToolPath(ReadOnlyTargetRules Target, string Executable)
     {
-        return "YarnSpinner-Unreal/Tools/" + Target.Platform + "/";
+        return Path.Combine(PluginDirectory, "Tools", Target.Platform.ToString(), Executable)
+            .Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 }

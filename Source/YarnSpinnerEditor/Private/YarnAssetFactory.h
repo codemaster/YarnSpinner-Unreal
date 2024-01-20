@@ -44,8 +44,6 @@ public:
 
 	EReimportResult::Type Reimport(UYarnProject* YarnProject);
 
-	static FString YscPath();
-
 	static bool GetCompiledDataForYarnProject(const TCHAR* InFilePath, Yarn::CompilerOutput& CompilerOutput);
 	static bool GetSourcesForProject(const TCHAR* InFilePath, TArray<FString>& SourceFiles);
 	static bool GetSourcesForProject(const UYarnProject* YarnProjectAsset, TArray<FString>& SourceFiles);
