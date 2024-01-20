@@ -191,12 +191,6 @@ EReimportResult::Type UYarnAssetFactory::Reimport(const UYarnProject* YarnProjec
 }
 
 
-FString UYarnAssetFactory::YscPath()
-{
-    return FPaths::Combine(FPaths::ProjectPluginsDir(), FString(YSC_PATH));
-}
-
-
 bool UYarnAssetFactory::GetCompiledDataForYarnProject(const TCHAR* InFilePath, Yarn::CompilerOutput& CompilerOutput)
 {
     FString StdOut;
@@ -208,7 +202,7 @@ bool UYarnAssetFactory::GetCompiledDataForYarnProject(const TCHAR* InFilePath, Y
 
     // Run ysc to get our compilation result
     UE_LOG(LogYarnSpinnerEditor, Log, TEXT("Calling ysc with %s"), *Params);
-    FPlatformProcess::ExecProcess(*YscPath(), *Params, &ReturnCode, &StdOut, &StdErr);
+    FPlatformProcess::ExecProcess(YSC_PATH, *Params, &ReturnCode, &StdOut, &StdErr);
 
     UE_LOG(LogYarnSpinnerEditor, Log, TEXT("ysc returned %i;"), ReturnCode);
     UE_LOG(LogYarnSpinnerEditor, Log, TEXT("stdout:"));
@@ -248,7 +242,7 @@ bool UYarnAssetFactory::GetSourcesForProject(const TCHAR* InFilePath, TArray<FSt
     int32 ReturnCode;
 
     const FString Params = FString::Printf(TEXT("list-sources %s"), InFilePath);
-    FPlatformProcess::ExecProcess(*YscPath(), *Params, &ReturnCode, &StdOut, &StdErr);
+    FPlatformProcess::ExecProcess(YSC_PATH, *Params, &ReturnCode, &StdOut, &StdErr);
 
     if (ReturnCode != 0)
     {

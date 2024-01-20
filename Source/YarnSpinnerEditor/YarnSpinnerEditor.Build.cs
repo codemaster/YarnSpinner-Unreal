@@ -63,8 +63,9 @@ public class YarnSpinnerEditor : ModuleRules
             });
     }
 
-    public string ToolPath(ReadOnlyTargetRules Target, string executable)
+    public string ToolPath(ReadOnlyTargetRules Target, string Executable)
     {
-        return $"YarnSpinner-Unreal/Tools/{Target.Platform}/{executable}";
+        return Path.Combine(PluginDirectory, "Tools", Target.Platform.ToString(), Executable)
+            .Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 }
